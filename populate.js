@@ -250,7 +250,7 @@ async function doPopulate() {
                         }
                         // Return response
                         console.log(color_success, "All replies added to database!");
-                        mongoose.connection.close();
+                        //mongoose.connection.close();
                         resolve('Promise is resolved successfully.');
                         return 'Loaded Replies';
                     }
@@ -345,6 +345,7 @@ async function doPopulate() {
                         }
                         // Return response
                         console.log(color_success, "All notifications added to database!")
+                        mongoose.connection.close();
                         resolve('Promise is resolved successfully.');
                         return 'Loaded Notifications';
                     }
