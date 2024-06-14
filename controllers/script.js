@@ -42,9 +42,7 @@ exports.getScript = async(req, res, next) => {
         }
 
         // Array of actor posts that match the user's experimental condition, within the past 24 hours, sorted by descending time. 
-        let script_feed = await Script.find({
-                class: { "$in": ["", user.experimentalCondition] }
-            })
+        let script_feed = await Script.find()
             .where('time').lte(time_diff).gte(time_limit)
             .sort('-time')
             .populate('actor')
