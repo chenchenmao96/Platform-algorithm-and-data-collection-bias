@@ -19,6 +19,8 @@ const multer = require('multer');
 const fs = require('fs');
 const util = require('util');
 fs.readFileAsync = util.promisify(fs.readFile);
+const router = express.Router();
+
 
 /**
  * Middleware for handling multipart/form-data, which is primarily used for uploading files.
@@ -226,7 +228,8 @@ app.get('/user/:userId', passportConfig.isAuthenticated, actorsController.getAct
 app.post('/user', passportConfig.isAuthenticated, actorsController.postBlockReportOrFollow);
 app.get('/actors', passportConfig.isAuthenticated, actorsController.getActors)
 
-app.get('/feed', passportConfig.isAuthenticated, scriptController.getScript);
+app.get('/feed', scriptController.getScript);
+
 app.post('/feed', passportConfig.isAuthenticated, scriptController.postUpdateFeedAction);
 app.post('/userPost_feed', passportConfig.isAuthenticated, scriptController.postUpdateUserPostFeedAction);
 app.get('/test', passportConfig.isAuthenticated, function(req, res) {
@@ -234,6 +237,7 @@ app.get('/test', passportConfig.isAuthenticated, function(req, res) {
         title: 'Test'
     })
 });
+
 
 /**
  * Error Handler.

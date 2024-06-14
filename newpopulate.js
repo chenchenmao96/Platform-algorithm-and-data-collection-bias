@@ -19,7 +19,8 @@ const posts_inputFile = './input/posts.csv';
 const replies_inputFile = './input/replies.csv';
 const politicalPosts_inputFile = './input/political_posts.csv';
 const politicalReplies_inputFile = './input/political_replies.csv';
-
+var globalRepliesCount;
+var globalPoliticalRepliesCount;
 
 //const notifications_inputFile = './input/notifications (read, like).csv';
 //const notifications_replies_inputFile = './input/notifications (reply).csv';
@@ -121,6 +122,11 @@ async function doPopulate() {
                 });
             });
         }).then(function(result) {
+            console.log(color_start, "Counting replies for posts...");
+            globalRepliesCount = countRepliesForPosts(comment_list);
+            globalPoliticalRepliesCount = countRepliesForPosts(political_replies_list);
+            console.log(color_success, "Replies counted");
+        }).then(function(result) {
             console.log(color_start, "Starting to populate actors collection...");
             return new Promise((resolve, reject) => {
                 async.each(actors_list, async function(actor_raw, callback) {
@@ -167,11 +173,17 @@ async function doPopulate() {
                 async.each(posts_list.concat(political_posts_list), async function(new_post, callback) {
                     const act = await Actor.findOne({ username: new_post.actor }).exec();
                     if (act) {
+                        let likes = 0;
+                        if (new_post.class === 'Food') {
+                            likes = globalRepliesCount[new_post.id] || 0;
+                        } else if (new_post.class === 'Politics') {
+                            likes = globalPoliticalRepliesCount[new_post.id] || 0;
+                        }
                         const postdetail = {
                             postID: new_post.id,
                             body: new_post.body,
                             picture: new_post.picture,
-                            likes: getLikes(),
+                            likes: likes,
                             actor: act,
                             time: timeStringToNum(new_post.time) || null,
                             class: new_post.class
@@ -199,13 +211,14 @@ async function doPopulate() {
                     return 'Loaded Posts';
                 });
             });
-        }).then(function(result) {
-            console.log(color_start, "Starting to populate post replies...");
+        })// Process food post replies
+        .then(function(result) {
+            console.log(color_start, "Starting to populate food post replies...");
             return new Promise((resolve, reject) => {
-                async.eachSeries(comment_list.concat(political_replies_list), async function(new_reply, callback) {
+                async.eachSeries(comment_list, async function(new_reply, callback) {
                     const act = await Actor.findOne({ username: new_reply.actor }).exec();
                     if (act) {
-                        const pr = await Script.findOne({ postID: new_reply.postID }).exec();
+                        const pr = await Script.findOne({ postID: new_reply.postID, class: 'Food' }).exec();
                         if (pr) {
                             const comment_detail = {
                                 commentID: new_reply.id,
@@ -226,7 +239,7 @@ async function doPopulate() {
                                 next(err);
                             }
                         } else { //Else no post found
-                            console.log(color_error, "ERROR: Post not found in database");
+                            console.log(color_error, "ERROR: Food post not found in database");
                             callback();
                         }
         
@@ -236,14 +249,63 @@ async function doPopulate() {
                     }
                 }, function(err) {
                     if (err) {
-                        console.log(color_error, "ERROR: Something went wrong with saving replies in database");
+                        console.log(color_error, "ERROR: Something went wrong with saving food replies in database");
                         callback(err);
                     }
                     // Return response
-                    console.log(color_success, "All replies added to database!");
+                    console.log(color_success, "All food replies added to database!");
+                    resolve('Promise is resolved successfully.');
+                    return 'Loaded Food Replies';
+                });
+            });
+        })
+        
+        // Process political post replies
+        .then(function(result) {
+            console.log(color_start, "Starting to populate political post replies...");
+            return new Promise((resolve, reject) => {
+                async.eachSeries(political_replies_list, async function(new_reply, callback) {
+                    const act = await Actor.findOne({ username: new_reply.actor }).exec();
+                    if (act) {
+                        const pr = await Script.findOne({ postID: new_reply.postID, class: 'Politics' }).exec();
+                        if (pr) {
+                            const comment_detail = {
+                                commentID: new_reply.id,
+                                body: new_reply.body,
+                                likes: getLikesComment(),
+                                actor: act,
+                                time: timeStringToNum(new_reply.time),
+                                class: new_reply.class
+                            };
+        
+                            pr.comments.push(comment_detail);
+                            pr.comments.sort(function(a, b) { return a.time - b.time; });
+        
+                            try {
+                                await pr.save();
+                            } catch (err) {
+                                console.log(color_error, "ERROR: Something went wrong with saving political reply in database");
+                                next(err);
+                            }
+                        } else { //Else no post found
+                            console.log(color_error, "ERROR: Political post not found in database");
+                            callback();
+                        }
+        
+                    } else { //Else no actor found
+                        console.log(color_error, "ERROR: Actor not found in database");
+                        callback();
+                    }
+                }, function(err) {
+                    if (err) {
+                        console.log(color_error, "ERROR: Something went wrong with saving political replies in database");
+                        callback(err);
+                    }
+                    // Return response
+                    console.log(color_success, "All political replies added to database!");
                     mongoose.connection.close();
                     resolve('Promise is resolved successfully.');
-                    return 'Loaded Replies';
+                    return 'Loaded Political Replies';
                 });
             });
         })
@@ -285,6 +347,12 @@ function getLikesComment() {
     var idx = Math.floor(Math.random() * notRandomNumbers.length);
     return notRandomNumbers[idx];
 }
+const countRepliesForPosts = (replies) => {
+    return replies.reduce((acc, reply) => {
+        acc[reply.postID] = (acc[reply.postID] || 0) + 1;
+        return acc;
+    }, {});
+};
 
 //Call the function with the long chain of promises
 doPopulate();
