@@ -87,7 +87,7 @@ exports.getScriptFeed = async (req, res, next) => {
                     const finalfeed = helpers.getFeed(user_posts, script_feed, user, process.env.FEED_ORDER, true);
                     console.log("Script Size is now: " + finalfeed.length);
                     await user.save();
-                    res.render('script', { script: finalfeed, showNewPostIcon: true });
+                    res.render('script', { script: finalfeed, showNewPostIcon: true ,user: user });
                 } catch (err) {
                     return next(err);
                 }
@@ -344,7 +344,7 @@ exports.getScript = async(req, res, next) => {
         const finalfeed = helpers.getFeed(user_posts, script_feed, user, process.env.FEED_ORDER, true);
         console.log("Script Size is now: " + finalfeed.length);
         await user.save();
-        res.render('script', { script: finalfeed, showNewPostIcon: true });
+        res.render('script', { script: finalfeed, showNewPostIcon: true, user: user  });
     } catch (err) {
         next(err);
     }
