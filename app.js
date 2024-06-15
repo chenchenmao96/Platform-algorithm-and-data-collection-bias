@@ -131,16 +131,25 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(flash());
-app.use((req, res, next) => {
+
+/// CHENCHEN'S note removing lines below so it can bypass csrf
+/* app.use((req, res, next) => {
+    // Log the path to debug
+    console.log(`Path: ${req.path}`);
+    
     // Multer multipart/form-data handling needs to occur before the Lusca CSRF check.
     // This allows us to not check CSRF when uploading an image file. It's a weird issue that multer and lusca do not play well together.
-    if ((req.path === '/post/new') || (req.path === '/account/profile') || (req.path === '/account/signup_info_post')) {
-        console.log("Not checking CSRF. Out path now");
+    if ((req.path === '/post/new')  || (req.path === '/account/profile') || (req.path === '/account/signup_info_post')) {
+        console.log("Not checking CSRF. Our path now");
         next();
     } else {
         lusca.csrf()(req, res, next);
     }
-});
+}); */
+app.use((req, res, next) => {
+    res.locals.user = req.user;
+    next();
+  });
 
 app.use(lusca.xframe('SAMEORIGIN'));
 app.use(lusca.xssProtection(true));
@@ -228,7 +237,7 @@ app.get('/user/:userId', passportConfig.isAuthenticated, actorsController.getAct
 app.post('/user', passportConfig.isAuthenticated, actorsController.postBlockReportOrFollow);
 app.get('/actors', passportConfig.isAuthenticated, actorsController.getActors)
 
-app.get('/feed', scriptController.getScript);
+app.get('/feed', passportConfig.isAuthenticated, scriptController.getScript);
 
 app.post('/feed', passportConfig.isAuthenticated, scriptController.postUpdateFeedAction);
 app.post('/userPost_feed', passportConfig.isAuthenticated, scriptController.postUpdateUserPostFeedAction);
@@ -238,6 +247,9 @@ app.get('/test', passportConfig.isAuthenticated, function(req, res) {
     })
 });
 
+// Chenchen's note : get: show postshere  ; post record user interaction
+app.get('/newsfeed/condition/', scriptController.getScriptFeed);
+//app.post('/newsfeed/condition/', scriptController.postUpdateFeedActionNoLOGIN);
 
 /**
  * Error Handler.

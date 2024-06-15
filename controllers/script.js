@@ -10,6 +10,291 @@ dotenv.config({ path: '.env' }); // See the file .env.example for the structure 
  * GET /
  * Fetch and render newsfeed.
  */
+exports.getScriptFeed = async (req, res, next) => {
+    try {
+        let participantID = Math.floor(Math.random() * 5000000); // replace this with the next line once we have participantID in URL
+        // let participantID = req.query.pID;
+    
+        let scriptAL = req.query.AL;
+        let scriptCN = req.query.CN;
+        let scriptUID = req.query.UID;
+        let admin = req.query.admin;
+    
+        if (!scriptUID) {
+            return res.status(400).send('Prolific ID is required');
+        }
+    
+        // Check if the user already exists
+        let existingUser = await User.findOne({ prolificID: scriptUID }).exec();
+       // console.log('Existing User:', existingUser); // Debugging: log the existing user
+        if (!existingUser) {
+            // If user does not exist, create a new one
+            existingUser = new User({
+                email: participantID + '@gmail.com',
+                password: 'password',
+                username: participantID,
+                AL: scriptAL,
+                CN: scriptCN,
+                prolificID: scriptUID,
+            });
+    
+            await existingUser.save();
+        }else {
+            // If user exists, retrieve AL and CN from the database
+            scriptAL = existingUser.AL;
+            scriptCN = existingUser.CN;
+        }
+    
+        req.logIn(existingUser, async () => {
+            if (admin) {
+                try {
+                    const user = await User.findById(req.user.id)
+                        .populate('posts.comments.actor')
+                        .exec();
+    
+                    if (!user.active) {
+                        req.logout((err) => {
+                            if (err) console.log('Error : Failed to logout.', err);
+                            req.session.destroy((err) => {
+                                if (err) console.log('Error : Failed to destroy the session during logout.', err);
+                                req.user = null;
+                                req.flash('errors', { msg: 'Account is no longer active. Study is over.' });
+                                res.redirect('/login');
+                            });
+                        });
+                        return;
+                    }
+    
+                    const one_day = 86400000; // Number of milliseconds in a day.
+                    const time_now = Date.now(); // Current date.
+                    const time_diff = time_now - req.user.createdAt; // Time difference between now and user account creation, in milliseconds.
+                    const time_limit = time_diff - one_day; // Date in milliseconds 24 hours ago from now.
+    
+                    const current_day = Math.floor(time_diff / one_day);
+                    if (current_day < process.env.NUM_DAYS) {
+                        user.study_days[current_day] += 1;
+                    }
+    
+                    let script_feed = await Script.find()
+                        .sort('-time')
+                        .populate('actor')
+                        .populate('comments.actor')
+                        .exec();
+    
+                    let user_posts = user.getPostInPeriod(0, time_diff);
+                    user_posts.sort((a, b) => b.relativeTime - a.relativeTime);
+    
+                    const finalfeed = helpers.getFeed(user_posts, script_feed, user, process.env.FEED_ORDER, true);
+                    console.log("Script Size is now: " + finalfeed.length);
+                    await user.save();
+                    res.render('script', { script: finalfeed, showNewPostIcon: true });
+                } catch (err) {
+                    return next(err);
+                }
+            }else {
+                try {
+                    const user = await User.findById(req.user.id)
+                        .populate('posts.comments.actor')
+                        .exec();
+        
+                    if (!user.active) {
+                        req.logout((err) => {
+                            if (err) console.log('Error : Failed to logout.', err);
+                            req.session.destroy((err) => {
+                                if (err) console.log('Error : Failed to destroy the session during logout.', err);
+                                req.user = null;
+                                req.flash('errors', { msg: 'Account is no longer active. Study is over.' });
+                                res.redirect('/login');
+                            });
+                        });
+                        return;
+                    }
+        
+                    const one_day = 86400000; // Number of milliseconds in a day.
+                    const time_now = Date.now(); // Current date.
+                    const time_diff = time_now - req.user.createdAt; // Time difference between now and user account creation, in milliseconds.
+                    const time_limit = time_diff - one_day; // Date in milliseconds 24 hours ago from now.
+        
+                    const current_day = Math.floor(time_diff / one_day);
+                    if (current_day < process.env.NUM_DAYS) {
+                        user.study_days[current_day] += 1;
+                    }
+        
+                    let query = {};
+        
+                    if (scriptCN === "f") {
+                        query = { "class": "Food" };
+                    } else {
+                        query = { "class": "Politics" };
+                    }
+        
+                    let sortCriteria = {};
+        
+                    if (scriptAL === "t") {
+                        sortCriteria = { time: -1 }; // Sort by creation time, latest first
+                    } else if (scriptAL === "e") {
+                        sortCriteria = { likes: -1 }; // Sort by number of likes, highest first
+                    } else {
+                        // Default sorting (shuffle)
+                        sortCriteria = { _id: 1 }; // This line is a placeholder for sorting by ID if shuffling is not done server-side
+                    }
+        
+                    let script_feed = await Script.find(query)
+                        .sort(sortCriteria)
+                        .populate('actor')
+                        .populate({
+                            path: 'comments.actor',
+                            model: 'Actor',
+                            options: { strictPopulate: false }
+                        })
+                        .exec();
+        
+                    // Shuffle the posts if no specific sorting is applied
+                    if (!["t", "e"].includes(scriptAL)) {
+                        script_feed = _.shuffle(script_feed);
+                    }
+        
+                    // Ensure script_feed is not empty
+                    if (!script_feed || script_feed.length === 0) {
+                        console.log("No script feed found for the given query and sorting criteria.");
+                        return res.status(404).send("No script feed found.");
+                    }
+        
+                    res.render('script', { script: script_feed, script_type: "" });
+                } catch (err) {
+                    return next(err);
+                }
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+exports.postUpdateFeedActionNoLOGIN = async(req, res, next) => {
+    try {
+
+        const prolificID = req.query.UID;
+        console.log('Request Query:', req.query);
+        console.log('Request Body:', req.body);
+        if (!prolificID) {
+            return res.status(400).send('Prolific ID is required');
+        }
+
+
+        // Find the user by prolificID
+        const user = await User.findOne({ prolificID: prolificID }).exec();
+        console.log('User found:', user); // Debugging: log the user
+        console.log(user);
+        // Check if user has interacted with the post before.
+        let feedIndex = _.findIndex(user.feedAction, function(o) { return o.post == req.body.postID; });
+
+        // If the user has not interacted with the post before, add the post to user.feedAction.
+        if (feedIndex == -1) {
+            const cat = {
+                post: req.body.postID,
+                postClass: req.body.postClass,
+            };
+            feedIndex = user.feedAction.push(cat) - 1;
+        }
+
+        // User created a new comment on the post.
+        if (req.body.new_comment) {
+            user.numComments = user.numComments + 1;
+            const cat = {
+                new_comment: true,
+                new_comment_id: user.numComments,
+                body: req.body.comment_text,
+                relativeTime: req.body.new_comment - user.createdAt,
+                absTime: req.body.new_comment,
+                liked: false,
+                flagged: false,
+            }
+            user.feedAction[feedIndex].comments.push(cat);
+        }
+        // User interacted with a comment on the post.
+        else if (req.body.commentID) {
+            const isUserComment = (req.body.isUserComment == 'true');
+            // Check if user has interacted with the comment before.
+            let commentIndex = (isUserComment) ?
+                _.findIndex(user.feedAction[feedIndex].comments, function(o) {
+                    return o.new_comment_id == req.body.commentID && o.new_comment == isUserComment
+                }) :
+                _.findIndex(user.feedAction[feedIndex].comments, function(o) {
+                    return o.comment == req.body.commentID && o.new_comment == isUserComment
+                });
+
+            // If the user has not interacted with the comment before, add the comment to user.feedAction[feedIndex].comments
+            if (commentIndex == -1) {
+                const cat = {
+                    comment: req.body.commentID
+                };
+                user.feedAction[feedIndex].comments.push(cat);
+                commentIndex = user.feedAction[feedIndex].comments.length - 1;
+            }
+
+            // User liked the comment.
+            if (req.body.like) {
+                const like = req.body.like;
+                user.feedAction[feedIndex].comments[commentIndex].likeTime.push(like);
+                user.feedAction[feedIndex].comments[commentIndex].liked = true;
+                if (req.body.isUserComment != 'true') user.numCommentLikes++;
+            }
+
+            // User unliked the comment.
+            if (req.body.unlike) {
+                const unlike = req.body.unlike;
+                user.feedAction[feedIndex].comments[commentIndex].unlikeTime.push(unlike);
+                user.feedAction[feedIndex].comments[commentIndex].liked = false;
+                if (req.body.isUserComment != 'true') user.numCommentLikes--;
+            }
+
+            // User flagged the comment.
+            else if (req.body.flag) {
+                const flag = req.body.flag;
+                user.feedAction[feedIndex].comments[commentIndex].flagTime.push(flag);
+                user.feedAction[feedIndex].comments[commentIndex].flagged = true;
+            }
+        }
+        // User interacted with the post.
+        else {
+            // User flagged the post.
+            if (req.body.flag) {
+                const flag = req.body.flag;
+                user.feedAction[feedIndex].flagTime = [flag];
+                user.feedAction[feedIndex].flagged = true;
+            }
+
+            // User liked the post.
+            else if (req.body.like) {
+                const like = req.body.like;
+                user.feedAction[feedIndex].likeTime.push(like);
+                user.feedAction[feedIndex].liked = true;
+                user.numPostLikes++;
+            }
+            // User unliked the post.
+            else if (req.body.unlike) {
+                const unlike = req.body.unlike;
+                user.feedAction[feedIndex].unlikeTime.push(unlike);
+                user.feedAction[feedIndex].liked = false;
+                user.numPostLikes--;
+            }
+            // User read the post.
+            else if (req.body.viewed) {
+                const view = req.body.viewed;
+                user.feedAction[feedIndex].readTime.push(view);
+                user.feedAction[feedIndex].rereadTimes++;
+                user.feedAction[feedIndex].mostRecentTime = Date.now();
+            } else {
+                console.log('Something in feedAction went crazy. You should never see this.');
+            }
+        }
+        await user.save();
+        res.send({ result: "success", numComments: user.numComments });
+    } catch (err) {
+        next(err);
+    }
+};
+
 exports.getScript = async(req, res, next) => {
     try {
         const one_day = 86400000; // Number of milliseconds in a day.
