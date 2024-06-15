@@ -26,7 +26,7 @@ exports.getScriptFeed = async (req, res, next) => {
     
         // Check if the user already exists
         let existingUser = await User.findOne({ prolificID: scriptUID }).exec();
-       // console.log('Existing User:', existingUser); // Debugging: log the existing user
+        
         if (!existingUser) {
             // If user does not exist, create a new one
             existingUser = new User({
@@ -39,42 +39,45 @@ exports.getScriptFeed = async (req, res, next) => {
             });
     
             await existingUser.save();
-        }else {
+        } else {
             // If user exists, retrieve AL and CN from the database
             scriptAL = existingUser.AL;
             scriptCN = existingUser.CN;
         }
     
-        req.logIn(existingUser, async () => {
-            if (admin) {
-                try {
-                    const user = await User.findById(req.user.id)
-                        .populate('posts.comments.actor')
-                        .exec();
+        req.logIn(existingUser, async (err) => {
+            if (err) {
+                return next(err);
+            }
+            try {
+                const user = await User.findById(req.user.id)
+                    .populate('posts.comments.actor')
+                    .exec();
     
-                    if (!user.active) {
-                        req.logout((err) => {
-                            if (err) console.log('Error : Failed to logout.', err);
-                            req.session.destroy((err) => {
-                                if (err) console.log('Error : Failed to destroy the session during logout.', err);
-                                req.user = null;
-                                req.flash('errors', { msg: 'Account is no longer active. Study is over.' });
-                                res.redirect('/login');
-                            });
+                if (!user.active) {
+                    req.logout((err) => {
+                        if (err) console.log('Error : Failed to logout.', err);
+                        req.session.destroy((err) => {
+                            if (err) console.log('Error : Failed to destroy the session during logout.', err);
+                            req.user = null;
+                            req.flash('errors', { msg: 'Account is no longer active. Study is over.' });
+                            res.redirect('/login');
                         });
-                        return;
-                    }
+                    });
+                    return;
+                }
     
-                    const one_day = 86400000; // Number of milliseconds in a day.
-                    const time_now = Date.now(); // Current date.
-                    const time_diff = time_now - req.user.createdAt; // Time difference between now and user account creation, in milliseconds.
-                    const time_limit = time_diff - one_day; // Date in milliseconds 24 hours ago from now.
+                const one_day = 86400000; // Number of milliseconds in a day.
+                const time_now = Date.now(); // Current date.
+                const time_diff = time_now - req.user.createdAt; // Time difference between now and user account creation, in milliseconds.
+                const time_limit = time_diff - one_day; // Date in milliseconds 24 hours ago from now.
     
-                    const current_day = Math.floor(time_diff / one_day);
-                    if (current_day < process.env.NUM_DAYS) {
-                        user.study_days[current_day] += 1;
-                    }
+                const current_day = Math.floor(time_diff / one_day);
+                if (current_day < process.env.NUM_DAYS) {
+                    user.study_days[current_day] += 1;
+                }
     
+                if (admin) {
                     let script_feed = await Script.find()
                         .sort('-time')
                         .populate('actor')
@@ -87,49 +90,18 @@ exports.getScriptFeed = async (req, res, next) => {
                     const finalfeed = helpers.getFeed(user_posts, script_feed, user, process.env.FEED_ORDER, true);
                     console.log("Script Size is now: " + finalfeed.length);
                     await user.save();
-                    res.render('script', { script: finalfeed, showNewPostIcon: true ,user: user });
-                } catch (err) {
-                    return next(err);
-                }
-            }else {
-                try {
-                    const user = await User.findById(req.user.id)
-                        .populate('posts.comments.actor')
-                        .exec();
-        
-                    if (!user.active) {
-                        req.logout((err) => {
-                            if (err) console.log('Error : Failed to logout.', err);
-                            req.session.destroy((err) => {
-                                if (err) console.log('Error : Failed to destroy the session during logout.', err);
-                                req.user = null;
-                                req.flash('errors', { msg: 'Account is no longer active. Study is over.' });
-                                res.redirect('/login');
-                            });
-                        });
-                        return;
-                    }
-        
-                    const one_day = 86400000; // Number of milliseconds in a day.
-                    const time_now = Date.now(); // Current date.
-                    const time_diff = time_now - req.user.createdAt; // Time difference between now and user account creation, in milliseconds.
-                    const time_limit = time_diff - one_day; // Date in milliseconds 24 hours ago from now.
-        
-                    const current_day = Math.floor(time_diff / one_day);
-                    if (current_day < process.env.NUM_DAYS) {
-                        user.study_days[current_day] += 1;
-                    }
-        
+                    res.render('script', { script: finalfeed, showNewPostIcon: true, user: user });
+                } else {
                     let query = {};
-        
+    
                     if (scriptCN === "f") {
                         query = { "class": "Food" };
                     } else {
                         query = { "class": "Politics" };
                     }
-        
+    
                     let sortCriteria = {};
-        
+    
                     if (scriptAL === "t") {
                         sortCriteria = { time: -1 }; // Sort by creation time, latest first
                     } else if (scriptAL === "e") {
@@ -138,7 +110,7 @@ exports.getScriptFeed = async (req, res, next) => {
                         // Default sorting (shuffle)
                         sortCriteria = { _id: 1 }; // This line is a placeholder for sorting by ID if shuffling is not done server-side
                     }
-        
+    
                     let script_feed = await Script.find(query)
                         .sort(sortCriteria)
                         .populate('actor')
@@ -148,22 +120,22 @@ exports.getScriptFeed = async (req, res, next) => {
                             options: { strictPopulate: false }
                         })
                         .exec();
-        
+    
                     // Shuffle the posts if no specific sorting is applied
                     if (!["t", "e"].includes(scriptAL)) {
                         script_feed = _.shuffle(script_feed);
                     }
-        
+    
                     // Ensure script_feed is not empty
                     if (!script_feed || script_feed.length === 0) {
                         console.log("No script feed found for the given query and sorting criteria.");
                         return res.status(404).send("No script feed found.");
                     }
-        
-                    res.render('script', { script: script_feed, script_type: "" });
-                } catch (err) {
-                    return next(err);
+    
+                    res.render('script', { script: script_feed, script_type: "", user: user });
                 }
+            } catch (err) {
+                return next(err);
             }
         });
     } catch (err) {
