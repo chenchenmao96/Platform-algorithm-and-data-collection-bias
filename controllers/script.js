@@ -26,7 +26,7 @@ exports.getScriptFeed = async (req, res, next) => {
     
         // Check if the user already exists
         let existingUser = await User.findOne({ prolificID: scriptUID }).exec();
-        
+        console.log('Existing User:', existingUser);
         if (!existingUser) {
             // If user does not exist, create a new one
             existingUser = new User({
@@ -39,39 +39,25 @@ exports.getScriptFeed = async (req, res, next) => {
             });
     
             await existingUser.save();
-        } else {
+        }
+        else {
             // If user exists, retrieve AL and CN from the database
             scriptAL = existingUser.AL;
             scriptCN = existingUser.CN;
-        }
+            admin = existingUser.isAdmin;
+        } 
     
         req.logIn(existingUser, async (err) => {
-            if (err) {
-                return next(err);
-            }
-            try {
-                const user = await User.findById(req.user.id)
-                    .populate('posts.comments.actor')
-                    .exec();
-    
-                if (!user.active) {
-                    req.logout((err) => {
-                        if (err) console.log('Error : Failed to logout.', err);
-                        req.session.destroy((err) => {
-                            if (err) console.log('Error : Failed to destroy the session during logout.', err);
-                            req.user = null;
-                            req.flash('errors', { msg: 'Account is no longer active. Study is over.' });
-                            res.redirect('/login');
-                        });
-                    });
-                    return;
-                }
-    
+            
+   
                 const one_day = 86400000; // Number of milliseconds in a day.
                 const time_now = Date.now(); // Current date.
                 const time_diff = time_now - req.user.createdAt; // Time difference between now and user account creation, in milliseconds.
                 const time_limit = time_diff - one_day; // Date in milliseconds 24 hours ago from now.
-    
+                const user = await User.findById(req.user.id);
+                    if (!user) {
+                        throw new Error('User not found');
+                    }
                 const current_day = Math.floor(time_diff / one_day);
                 if (current_day < process.env.NUM_DAYS) {
                     user.study_days[current_day] += 1;
@@ -134,9 +120,7 @@ exports.getScriptFeed = async (req, res, next) => {
     
                     res.render('script', { script: script_feed, script_type: "", user: user });
                 }
-            } catch (err) {
-                return next(err);
-            }
+            
         });
     } catch (err) {
         next(err);
