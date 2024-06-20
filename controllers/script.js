@@ -36,6 +36,7 @@ exports.getScriptFeed = async (req, res, next) => {
                 AL: scriptAL,
                 CN: scriptCN,
                 prolificID: scriptUID,
+                isAdmin:admin,
             });
     
             await existingUser.save();
