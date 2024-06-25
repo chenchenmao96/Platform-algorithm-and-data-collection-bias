@@ -5,11 +5,11 @@
       .center
         h2.ui.inverted.icon.header
           i.red.flag.icon
-          |  You've flagged this!
+          |  You've shared this!
           h3.ui.inverted.header
             span="The admins will review this post further. We are sorry you had this experience."
   .content
-    .right.floated.time.meta= (user.createdAt.getTime() + val.time)
+    .right.floated.time.meta.actorPost= (user.createdAt.getTime() + val.time)
     a(href='/user/'+val.actor.username)     
       img.ui.avatar.image(src='/public/picture.svg', data-src=cdn+"/profile_pictures/"+val.actor.profile.picture)
       span=val.actor.profile.name
@@ -23,16 +23,14 @@
     .myTimer.hidden 0
   .ui.bottom.three.attached.icon.buttons
     .ui.reply.button(tabindex='0')
-      i.reply.icon
-      |  Reply
+      i.comment.icon
+      | #{val.comments.length}
     .ui.flag.button(tabindex='0')
-      i.flag.icon
-      |  Flag
+      i.retweet.icon
     .ui.labeled.button(tabindex='0')
       .ui.like.button(class=val.like? "red": null)
         i.heart.icon
-        |  Like
-      a.ui.basic.red.left.pointing.label.count=val.likes
+        |  #{val.likes}
   if val.comments.length > 0
     .content
       .ui.comments

@@ -10,7 +10,7 @@ const _ = require('lodash');
  * If query parameter 'bell' is true, return the number of new/ unseen notifications.
  * If it is false, render the notifications page.
  */
-exports.getNotifications = async(req, res) => {
+exports.getNotifications = async(req, res,next) => {
     try {
         if (req.user) {
             const user = await User.findById(req.user.id)

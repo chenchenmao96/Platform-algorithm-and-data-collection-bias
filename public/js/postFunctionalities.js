@@ -1,44 +1,54 @@
 function likePost(e) {
     const target = $(e.target).closest('.ui.like.button');
-    const label = target.closest('.ui.like.button').next("a.ui.basic.red.left.pointing.label.count");
     const postID = target.closest(".ui.fluid.card").attr("postID");
     const postClass = target.closest(".ui.fluid.card").attr("postClass");
     const currDate = Date.now();
+    const csrfToken = $('meta[name="csrf-token"]').attr('content');
 
-    if (target.hasClass("red")) { //Unlike Post
+    // Extract the current like count from the text node inside the button
+    const likeTextNode = target.contents().filter(function() {
+        return this.nodeType === 3; // Node.TEXT_NODE
+    }).get(0);
+    let currentLikes = parseInt(likeTextNode.nodeValue.trim(), 10);
+
+    if (target.hasClass("red")) { // Unlike Post
         target.removeClass("red");
-        label.html(function(i, val) { return val * 1 - 1 });
+        currentLikes -= 1;
+        likeTextNode.nodeValue = ` ${currentLikes}`;
 
-        if (target.closest(".ui.fluid.card").attr("type") == 'userPost')
+        if (target.closest(".ui.fluid.card").attr("type") == 'userPost') {
             $.post("/userPost_feed", {
                 postID: postID,
                 unlike: currDate,
-                _csrf: $('meta[name="csrf-token"]').attr('content')
+                _csrf: csrfToken
             });
-        else
+        } else {
             $.post("/feed", {
                 postID: postID,
                 unlike: currDate,
                 postClass: postClass,
-                _csrf: $('meta[name="csrf-token"]').attr('content')
+                _csrf: csrfToken
             });
-    } else { //Like Post
+        }
+    } else { // Like Post
         target.addClass("red");
-        label.html(function(i, val) { return val * 1 + 1 });
+        currentLikes += 1;
+        likeTextNode.nodeValue = ` ${currentLikes}`;
 
-        if (target.closest(".ui.fluid.card").attr("type") == 'userPost')
+        if (target.closest(".ui.fluid.card").attr("type") == 'userPost') {
             $.post("/userPost_feed", {
                 postID: postID,
                 like: currDate,
-                _csrf: $('meta[name="csrf-token"]').attr('content')
+                _csrf: csrfToken
             });
-        else
+        } else {
             $.post("/feed", {
                 postID: postID,
                 like: currDate,
                 postClass: postClass,
-                _csrf: $('meta[name="csrf-token"]').attr('content')
+                _csrf: csrfToken
             });
+        }
     }
 }
 
@@ -130,7 +140,7 @@ function flagComment(e) {
     comment.replaceWith(`
         <div class="comment" commentID="${commentID}" style="background-color:black;color:white">
             <h5 class="ui inverted header" style="padding-bottom: 0.5em; padding-left: 0.5em;">
-                The admins will review this comment further. We are sorry you had this experience.
+                You have shared this post.
             </h5>
         </div>`);
     const flag = Date.now();
@@ -186,6 +196,10 @@ function addComment(e) {
         $(this).siblings(".ui.form").find("textarea.newcomment").val('');
         comments.append(mess);
 
+        const newCommentCount = comments.children().length;
+        //alert("comment length: " + newCommentCount); // Correct usage of alert
+        updateCommentCount(postID, newCommentCount);
+
         if (card.attr("type") == 'userPost')
             $.post("/userPost_feed", {
                 postID: postID,
@@ -205,6 +219,23 @@ function addComment(e) {
             }).then(function(json) {
                 numComments = json.numComments;
             });
+    }
+}
+
+function updateCommentCount(postID, newCommentCount) {
+    // Find the card with the given postID
+    const card = $(`.ui.fluid.card[postID='${postID}']`);
+    // Find the reply button inside that card
+    const replyButton = card.find('.ui.reply.button');
+    // Find the text node containing the comment count
+    const commentTextNode = replyButton.contents().filter(function() {
+        return this.nodeType === 3; // Node.TEXT_NODE
+    }).get(0);
+    // Update the comment count
+    if (commentTextNode) {
+        commentTextNode.nodeValue = ` ${newCommentCount}`;
+    } else {
+        console.error("Comment text node not found");
     }
 }
 
@@ -239,7 +270,13 @@ $(window).on('load', () => {
     $('.right.floated.time.meta, .date').each(function() {
         const ms = parseInt($(this).text(), 10);
         const time = new Date(ms);
-        $(this).text(humanized_time_span(time));
+        const humanizedTime = humanized_time_span(time);
+        // Update the element's HTML while preserving the <strong> tag
+        if ($(this).hasClass('actorPost')) {
+            $(this).html('<strong style="color: black;">' + humanizedTime + '</strong>');
+        } else {
+            $(this).text(humanizedTime);
+        }
     });
 
     // ************ Actions on Main Post ***************

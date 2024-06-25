@@ -70,7 +70,8 @@ exports.getFeed = function(user_posts, script_feed, user, order, removeFlaggedCo
 
             // Check if the user has interacted with this post by checking if a user.feedAction.post value matches this script_feed[0]'s _id. 
             // If the user has interacted with this post, add the user's interactions to the post.
-            const feedIndex = _.findIndex(user.feedAction, function(o) { return o.post.equals(script_feed[0].id) });
+            //const feedIndex = _.findIndex(user.feedAction, function(o) { return o.post.equals(script_feed[0].id) });
+            const feedIndex = _.findIndex(user.feedAction, function(o) { return o.post && o.post.equals(script_feed[0]?.id) });
             if (feedIndex != -1) {
                 // Check if there are comment-type actions on this post.
                 if (Array.isArray(user.feedAction[feedIndex].comments) && user.feedAction[feedIndex].comments) {
@@ -119,7 +120,7 @@ exports.getFeed = function(user_posts, script_feed, user, order, removeFlaggedCo
                 // Check if this post has been flagged by the user: If true and removeFlaggedContent is true, remove the post.
                 if (user.feedAction[feedIndex].flagTime[0]) {
                     if (removeFlaggedContent) {
-                        script_feed.splice(0, 1);
+                        //script_feed.splice(0, 1);
                     } else {
                         script_feed[0].flagged = true;
                     }

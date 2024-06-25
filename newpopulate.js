@@ -179,6 +179,13 @@ async function doPopulate() {
                         } else if (new_post.class === 'Politics') {
                             likes = globalPoliticalRepliesCount[new_post.id] || 0;
                         }
+                        if (likes === 7 || likes === 8 || likes === 9) {
+                            let min = likes;
+                            let max = likes + 1;
+                            likes = Math.round((Math.random() * (max - min) + min) * 100);
+                        } else {
+                            likes = Math.round(getRandomBetween(0, 20, 3));
+                        }
                         const postdetail = {
                             postID: new_post.id,
                             body: new_post.body,
@@ -335,7 +342,7 @@ function timeStringToNum(v) {
 //Create a random number (for the number of likes) with a weighted distrubution
 //This is for posts
 function getLikes() {
-    var notRandomNumbers = [1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 5, 6];
+    var notRandomNumbers = [0,0,0,0,1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 5, 6];
     var idx = Math.floor(Math.random() * notRandomNumbers.length);
     return notRandomNumbers[idx];
 }
@@ -353,6 +360,20 @@ const countRepliesForPosts = (replies) => {
         return acc;
     }, {});
 };
+function getRandomBetween(min, max, skew) {
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random(); // Converting [0,1) to (0,1)
+    while (v === 0) v = Math.random();
+    let num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+
+    num = num / 10.0 + 0.5; // Translate to 0 -> 1
+    if (num > 1 || num < 0) num = getRandomBetween(min, max, skew); // Resample between 0 and 1 if out of range
+
+    num = Math.pow(num, skew); // Skew
+    num *= (max - min); // Stretch to fill range
+    num += min; // Offset to min
+    return parseFloat(num.toFixed(2));
+}
 
 //Call the function with the long chain of promises
 doPopulate();

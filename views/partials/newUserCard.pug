@@ -1,32 +1,3 @@
 .ui.card
   .content
-    .description(style='white-space: pre-wrap; font-size: 20px;') Post Survey button will be clickable after one minute
-  .one.ui.bottom.attached.icon.buttons
-    button.ui.postsurvey.button(data-tooltip='Complete Post Survey', data-position='bottom left', disabled=true) Post Survey
-
-script.
-  // Enable Post Survey button after 1 minute
-  document.addEventListener('DOMContentLoaded', function() {
-    const button = document.querySelector('.ui.postsurvey.button');
-    
-    // Function to extract UID from the current URL
-    const queryString = window.location.search;
-    const urlParams = new URLSearchParams(queryString);
-    const uid = urlParams.get('UID');
-    
-    // Function to enable the button
-    const enableButton = () => {
-      button.disabled = false;
-      button.textContent = 'Complete Post Survey';
-    };
-
-    // Set a timer to enable the button after 1 minute
-    setTimeout(enableButton, 60000);
-
-    // Add click event listener
-    button.addEventListener('click', function() {
-      if (!button.disabled) {
-        window.location.href = "https://www.qualtrics.com/?proificID="+uid;
-      }
-    });
-  });
+    .description(style='white-space: pre-wrap; font-size: 20px;') The "Post Survey" button is located at the bottom of the page and will become clickable after 10 minute.
