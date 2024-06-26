@@ -12,7 +12,7 @@ const _ = require('lodash');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const CSVToJSON = require("csvtojson");
-
+const fs = require('fs');
 //Input Files
 const actor_inputFile = './input/actors.csv';
 const posts_inputFile = './input/posts.csv';
@@ -43,6 +43,13 @@ mongoose.connection.on('error', (err) => {
     process.exit(1);
 });
 
+// Arrays to store likes
+const foodPostIDs = [];
+const politicsPostIDs = [];
+const foodLikes = [];
+const politicsLikes = [];
+const foodComments = [];
+const politicsComments = [];
 /*
 This is a huge function of chained promises, done to achieve serial completion of asynchronous actions.
 There's probably a better way to do this, but this worked.
@@ -156,6 +163,7 @@ async function doPopulate() {
                             console.log(color_error, "ERROR: Something went wrong with saving actors in database");
                             callback(err);
                         }
+                        // Call these functions after the arrays are populated
                         // Return response
                         console.log(color_success, "All actors added to database!")
                         resolve('Promise is resolved successfully.');
@@ -174,10 +182,16 @@ async function doPopulate() {
                     const act = await Actor.findOne({ username: new_post.actor }).exec();
                     if (act) {
                         let likes = 0;
+                        let commentsCount = 0;
+                        let shares = 10;
                         if (new_post.class === 'Food') {
                             likes = globalRepliesCount[new_post.id] || 0;
+                            commentsCount = globalRepliesCount[new_post.id] || 0;
+                            foodPostIDs.push(new_post.id); // Add to foodPostIDs array
                         } else if (new_post.class === 'Politics') {
                             likes = globalPoliticalRepliesCount[new_post.id] || 0;
+                            commentsCount = globalRepliesCount[new_post.id] || 0;
+                            politicsPostIDs.push(new_post.id); // Add to politicsPostIDs array
                         }
                         if (likes === 7 || likes === 8 || likes === 9) {
                             let min = likes;
@@ -186,11 +200,19 @@ async function doPopulate() {
                         } else {
                             likes = Math.round(getRandomBetween(0, 20, 3));
                         }
+                        if (new_post.class === 'Food') {
+                            foodLikes.push(likes); // Add to foodLikes array
+                            foodComments.push(commentsCount); // Add to foodComments array
+                        } else if (new_post.class === 'Politics') {
+                            politicsLikes.push(likes); // Add to politicsLikes array
+                            politicsComments.push(commentsCount); // Add to politicsComments array
+                        }
                         const postdetail = {
                             postID: new_post.id,
                             body: new_post.body,
                             picture: new_post.picture,
                             likes: likes,
+                            shares: shares,
                             actor: act,
                             time: timeStringToNum(new_post.time) || null,
                             class: new_post.class
@@ -213,6 +235,8 @@ async function doPopulate() {
                         callback(err);
                     }
                     // Return response
+                    exportToCSV(foodPostIDs, foodLikes, foodComments, 'food_data.csv');
+                    exportToCSV(politicsPostIDs, politicsLikes, politicsComments, 'politics_data.csv');
                     console.log(color_success, "All posts added to database!")
                     resolve('Promise is resolved successfully.');
                     return 'Loaded Posts';
@@ -377,3 +401,16 @@ function getRandomBetween(min, max, skew) {
 
 //Call the function with the long chain of promises
 doPopulate();
+
+const exportToCSV = (postIDs, likes, comments, filename) => {
+    const headers = 'ID,num_likes,num_comments';
+    const csvContent = postIDs.map((id, index) => `${id},${likes[index]},${comments[index]}`).join('\n');
+    const finalCsv = `${headers}\n${csvContent}`;
+    fs.writeFileSync(filename, finalCsv, 'utf8', (err) => {
+        if (err) {
+            console.log(color_error, `ERROR: Could not write ${filename} to file`);
+            throw err;
+        }
+        console.log(color_success, `${filename} has been saved!`);
+    });
+};

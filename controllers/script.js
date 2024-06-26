@@ -14,7 +14,6 @@ exports.getScriptFeed = async (req, res, next) => {
     try {
         let participantID = Math.floor(Math.random() * 5000000); // replace this with the next line once we have participantID in URL
         // let participantID = req.query.pID;
-    
         let scriptAL = req.query.AL;
         let scriptCN = req.query.CN;
         let scriptUID = req.query.UID;

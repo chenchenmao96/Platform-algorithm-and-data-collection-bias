@@ -11,8 +11,8 @@ html
     meta(name="mobile-web-app-capable" content="yes")
     meta(name="msapplication-tap-highlight" content="no")
     meta(name="content-language" content="en_US")
-    title #{title} - #{process.env.SITE_NAME}
-    link(rel='shortcut icon', href=process.env.SITE_FAVICON)
+    title #{title} - #{siteName} 
+    link(rel='shortcut icon', href=process.env.siteLogo)
     link(rel='manifest', href='/public/manifest.json')
     link(rel='stylesheet', href='https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.9.2/semantic.min.css')
     link(type='text/css', rel='stylesheet', href='/public/css/ui_layout.css')

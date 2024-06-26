@@ -1,13 +1,5 @@
 .ui.fluid.card.dim(postClass=val.class, postID=val.id, type='actor', actor_un = val.actor.username, actor_name = val.actor.profile.name, actor_pic = val.actor.profile.picture)
   //- dimmer DIV for flagging
-  .ui.dimmer.flag
-    .content
-      .center
-        h2.ui.inverted.icon.header
-          i.red.flag.icon
-          |  You've shared this!
-          h3.ui.inverted.header
-            span="The admins will review this post further. We are sorry you had this experience."
   .content
     .right.floated.time.meta.actorPost= (user.createdAt.getTime() + val.time)
     a(href='/user/'+val.actor.username)     
@@ -24,9 +16,10 @@
   .ui.bottom.three.attached.icon.buttons
     .ui.reply.button(tabindex='0')
       i.comment.icon
-      | #{val.comments.length}
-    .ui.flag.button(tabindex='0')
+      |  #{val.comments.length}
+    .ui.flag.button(tabindex='0')(class=val.flag? "red": null) 
       i.retweet.icon
+      |  #{val.shares}
     .ui.labeled.button(tabindex='0')
       .ui.like.button(class=val.like? "red": null)
         i.heart.icon

@@ -4,11 +4,13 @@ function likePost(e) {
     const postClass = target.closest(".ui.fluid.card").attr("postClass");
     const currDate = Date.now();
     const csrfToken = $('meta[name="csrf-token"]').attr('content');
-
+    console.log("test to see like inform: ", target);
     // Extract the current like count from the text node inside the button
     const likeTextNode = target.contents().filter(function() {
         return this.nodeType === 3; // Node.TEXT_NODE
     }).get(0);
+
+    console.log("likeTextNode:", likeTextNode);
     let currentLikes = parseInt(likeTextNode.nodeValue.trim(), 10);
 
     if (target.hasClass("red")) { // Unlike Post
@@ -52,23 +54,58 @@ function likePost(e) {
     }
 }
 
+
 function flagPost(e) {
     const target = $(e.target);
-    const post = target.closest(".ui.fluid.card.dim");
-    const postID = post.attr("postID");
-    const postClass = target.closest(".ui.fluid.card").attr("postClass");
-    const flag = Date.now();
+    const flagButton = target.closest('.ui.flag.button'); // Ensure we are targeting the button
 
-    $.post("/feed", {
-        postID: postID,
-        flag: flag,
-        postClass: postClass,
-        _csrf: $('meta[name="csrf-token"]').attr('content')
-    });
-    post.find(".ui.dimmer.flag").dimmer({ closable: false }).dimmer('show');
-    //repeat to ensure its closable
-    post.find(".ui.dimmer.flag").dimmer({ closable: false }).dimmer('show');
+    if (!flagButton.hasClass("red")) {
+        const post = target.closest(".ui.fluid.card.dim");
+        const postID = post.attr("postID");
+        const postClass = post.attr("postClass");
+        const flag = Date.now();
+
+        $.post("/feed", {
+            postID: postID,
+            flag: flag,
+            postClass: postClass,
+            _csrf: $('meta[name="csrf-token"]').attr('content')
+        });
+
+        const card = $(`.ui.fluid.card[postID='${postID}']`);
+       
+        // Find the flag button inside that card
+        console.log("Flag button information: ", flagButton);
+
+        // Ensure the flag button contains the correct text node
+        const shareTextNode = flagButton.contents().filter(function() {
+            return this.nodeType === 3 && this.nodeValue.trim() !== ""; // Node.TEXT_NODE and non-empty
+        }).get(0);
+
+        if (shareTextNode) {
+            let currentSharesText = shareTextNode.nodeValue.trim();
+            console.log("Current shares text:", currentSharesText);
+
+            let currentShares = parseInt(currentSharesText, 10);
+            if (!isNaN(currentShares)) {
+                let newSharesNum = currentShares + 1; 
+                // Update the share text node value
+                shareTextNode.nodeValue = ` ${newSharesNum}`;
+            } else {
+                console.error("Current shares value is not a number:", currentSharesText);
+            }
+        } else {
+            console.error("Share text node not found or contains only whitespace");
+        }
+
+        console.log("Share text node:", shareTextNode);
+        flagButton.addClass("red"); // Add the class to the button
+    } else {
+        console.log("Flag button already has the red class");
+    }
 }
+
+
 
 function likeComment(e) {
     const target = $(e.target);
@@ -303,7 +340,7 @@ $(window).on('load', () => {
 
     //Flag Post
     $('.flag.button').on('click', flagPost);
-
+    
     // ************ Actions on Comments***************
     // Like/Unlike comment
     $('a.like.comment').on('click', likeComment);

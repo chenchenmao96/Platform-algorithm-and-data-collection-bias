@@ -68,6 +68,26 @@ const passportConfig = require('./config/passport');
  */
 const app = express();
 
+// Middleware to handle CN parameter and set siteName
+const handleCNParameter = (req, res, next) => {
+    const cn = req.query.CN;
+    console.log(`CN parameter: ${cn}`); // Debug log for CN parameter
+    if (cn === 'p') {
+        res.locals.siteName = process.env.SITE_NAME_NEWSWAVE;
+        res.locals.siteLogo = process.env.SITE_LOGOP;
+    } else {
+        res.locals.siteName = process.env.SITE_NAME_EATSNAP;
+        res.locals.siteLogo = process.env.SITE_LOGO;
+    }
+    console.log(`Set siteName to: ${res.locals.siteName}`); // Debug log
+    console.log(`Set siteLogo to: ${res.locals.siteLogo}`); // Debug log
+    next();
+};
+
+// Apply the middleware only to /newsfeed/condition/ route
+app.use('/newsfeed/condition/', handleCNParameter);
+
+  
 /**
  * Connect to MongoDB.
  */
