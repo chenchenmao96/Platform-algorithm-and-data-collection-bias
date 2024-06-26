@@ -10,6 +10,39 @@ dotenv.config({ path: '.env' }); // See the file .env.example for the structure 
  * GET /
  * Fetch and render newsfeed.
  */
+const fs = require('fs');
+const path = require('path');
+
+
+const orderFilePath = path.join(__dirname, 'feedOrder.json');
+
+function saveOrderToFile(order) {
+    fs.writeFileSync(orderFilePath, JSON.stringify(order), 'utf8');
+}
+
+function loadOrderFromFile() {
+    if (fs.existsSync(orderFilePath)) {
+        const orderData = fs.readFileSync(orderFilePath, 'utf8');
+        return JSON.parse(orderData);
+    }
+    return null;
+}
+
+function shuffleArray(array) {
+    return _.shuffle(array);
+}
+
+async function getOrCreateFeedOrder(groupId, script_feed) {
+    let order = loadOrderFromFile();
+    if (!order || !order[groupId]) {
+        // Generate a new random order
+        order = order || {};
+        order[groupId] = shuffleArray(script_feed.map(post => post._id.toString()));
+        // Save the order to the local file
+        saveOrderToFile(order);
+    }
+    return order[groupId];
+}
 exports.getScriptFeed = async (req, res, next) => {
     try {
         let participantID = Math.floor(Math.random() * 5000000); // replace this with the next line once we have participantID in URL
@@ -95,6 +128,7 @@ exports.getScriptFeed = async (req, res, next) => {
                     } else {
                         // Default sorting (shuffle)
                         sortCriteria = { _id: 1 }; // This line is a placeholder for sorting by ID if shuffling is not done server-side
+                     
                     }
     
                     let script_feed = await Script.find(query)
@@ -109,7 +143,12 @@ exports.getScriptFeed = async (req, res, next) => {
     
                     // Shuffle the posts if no specific sorting is applied
                     if (!["t", "e"].includes(scriptAL)) {
-                        script_feed = _.shuffle(script_feed);
+                        //script_feed = _.shuffle(script_feed);
+                        const groupId = `${scriptCN}-your-group-id`; // Combine content type with group ID
+                    //const order = await getOrCreateFeedOrder(groupId, script_feed);
+                    //script_feed.sort((a, b) => order.indexOf(a._id.toString()) - order.indexOf(b._id.toString()));
+                        const order = await getOrCreateFeedOrder(groupId, script_feed);
+                        script_feed.sort((a, b) => order.indexOf(a._id.toString()) - order.indexOf(b._id.toString()));
                     }
     
                     // Ensure script_feed is not empty
