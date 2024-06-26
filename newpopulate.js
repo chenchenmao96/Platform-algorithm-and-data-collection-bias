@@ -181,10 +181,10 @@ async function doPopulate() {
                 async.each(posts_list.concat(political_posts_list), async function(new_post, callback) {
                     const act = await Actor.findOne({ username: new_post.actor }).exec();
                     if (act) {
-                        let likes = 0;
-                        let commentsCount = 0;
-                        let shares = 10;
-                        if (new_post.class === 'Food') {
+                        //let likes = 0;
+                        //let commentsCount = 0;
+                        //let shares = 0;
+                       /*  if (new_post.class === 'Food') {
                             likes = globalRepliesCount[new_post.id] || 0;
                             commentsCount = globalRepliesCount[new_post.id] || 0;
                             foodPostIDs.push(new_post.id); // Add to foodPostIDs array
@@ -206,13 +206,14 @@ async function doPopulate() {
                         } else if (new_post.class === 'Politics') {
                             politicsLikes.push(likes); // Add to politicsLikes array
                             politicsComments.push(commentsCount); // Add to politicsComments array
-                        }
+                        } */
+
                         const postdetail = {
                             postID: new_post.id,
                             body: new_post.body,
                             picture: new_post.picture,
-                            likes: likes,
-                            shares: shares,
+                            likes: new_post.num_likes,
+                            shares: new_post.num_shares,
                             actor: act,
                             time: timeStringToNum(new_post.time) || null,
                             class: new_post.class
@@ -235,8 +236,8 @@ async function doPopulate() {
                         callback(err);
                     }
                     // Return response
-                    exportToCSV(foodPostIDs, foodLikes, foodComments, 'food_data.csv');
-                    exportToCSV(politicsPostIDs, politicsLikes, politicsComments, 'politics_data.csv');
+                    //exportToCSV(foodPostIDs, foodLikes, foodComments, 'food_data.csv');
+                    //exportToCSV(politicsPostIDs, politicsLikes, politicsComments, 'politics_data.csv');
                     console.log(color_success, "All posts added to database!")
                     resolve('Promise is resolved successfully.');
                     return 'Loaded Posts';
