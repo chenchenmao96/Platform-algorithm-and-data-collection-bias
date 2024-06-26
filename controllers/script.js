@@ -117,8 +117,13 @@ exports.getScriptFeed = async (req, res, next) => {
                         console.log("No script feed found for the given query and sorting criteria.");
                         return res.status(404).send("No script feed found.");
                     }
-    
-                    res.render('script', { script: script_feed, script_type: "", user: user });
+                    let user_posts = user.getPostInPeriod(0, time_diff);
+                    user_posts.sort((a, b) => b.relativeTime - a.relativeTime);
+                
+                    // Generate the final feed using the helper function
+                    const finalfeed = helpers.getFeed(user_posts, script_feed, user, process.env.FEED_ORDER, true, true);
+                
+                    res.render('script', { script: finalfeed, script_type: "", user: user });
                 }
             
         });
