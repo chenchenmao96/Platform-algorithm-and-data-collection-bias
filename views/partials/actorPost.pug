@@ -2,7 +2,7 @@
   //- dimmer DIV for flagging
   .content
     .right.floated.time.meta.actorPost= (user.createdAt.getTime() + val.time)
-    a(href='/user/'+val.actor.username)     
+    a(val.actor.username)     
       img.ui.avatar.image(src='/public/picture.svg', data-src=cdn+"/profile_pictures/"+val.actor.profile.picture)
       span=val.actor.profile.name
   .img.post.image
