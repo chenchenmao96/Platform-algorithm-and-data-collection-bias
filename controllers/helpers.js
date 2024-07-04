@@ -118,8 +118,8 @@ exports.getFeed = function(user_posts, script_feed, user, order, removeFlaggedCo
                     script_feed[0].likes++;
                 }
                 // check if user has flagged (shared in this case) in this post
-                if (user.feedAction[feedIndex].flagged) {
-                    script_feed[0].flag = true;
+                if (user.feedAction[feedIndex].shared) {
+                    script_feed[0].share = true;
                     script_feed[0].shares++;
                 }
                 // Check if this post has been flagged by the user: If true and removeFlaggedContent is true, remove the post.

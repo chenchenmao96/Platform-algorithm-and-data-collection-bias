@@ -489,12 +489,19 @@ exports.postUpdateFeedAction = async(req, res, next) => {
         // User interacted with the post.
         else {
             // User flagged the post.
-            if (req.body.flag) {
-                const flag = req.body.flag;
-                user.feedAction[feedIndex].flagTime = [flag];
-                user.feedAction[feedIndex].flagged = true;
+            if (req.body.share) {
+                const share = req.body.share;
+                user.feedAction[feedIndex].shareTime = [share];
+                user.feedAction[feedIndex].shared = true;
+                user.numPostShared++;
             }
-
+            // if user undo the share 
+            else if (req.body.unshare) {
+                const unshare = req.body.unshare;
+                user.feedAction[feedIndex].unshareTime = [unshare];
+                user.feedAction[feedIndex].shared = false;
+                user.numPostShared--;
+            }
             // User liked the post.
             else if (req.body.like) {
                 const like = req.body.like;

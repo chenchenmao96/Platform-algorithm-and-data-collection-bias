@@ -63,11 +63,11 @@ function flagPost(e) {
         const post = target.closest(".ui.fluid.card.dim");
         const postID = post.attr("postID");
         const postClass = post.attr("postClass");
-        const flag = Date.now();
+        const share = Date.now();
 
         $.post("/feed", {
             postID: postID,
-            flag: flag,
+            share: share,
             postClass: postClass,
             _csrf: $('meta[name="csrf-token"]').attr('content')
         });
@@ -101,7 +101,48 @@ function flagPost(e) {
         console.log("Share text node:", shareTextNode);
         flagButton.addClass("red"); // Add the class to the button
     } else {
-        console.log("Flag button already has the red class");
+
+        const post = target.closest(".ui.fluid.card.dim");
+        const postID = post.attr("postID");
+        const postClass = post.attr("postClass");
+        const share = Date.now();
+
+        $.post("/feed", {
+            postID: postID,
+            unshare: share,
+            postClass: postClass,
+            _csrf: $('meta[name="csrf-token"]').attr('content')
+        });
+
+        const card = $(`.ui.fluid.card[postID='${postID}']`);
+       
+        // Find the flag button inside that card
+        console.log("Flag button information: ", flagButton);
+
+        // Ensure the flag button contains the correct text node
+        const shareTextNode = flagButton.contents().filter(function() {
+            return this.nodeType === 3 && this.nodeValue.trim() !== ""; // Node.TEXT_NODE and non-empty
+        }).get(0);
+
+        if (shareTextNode) {
+            let currentSharesText = shareTextNode.nodeValue.trim();
+            console.log("Current shares text:", currentSharesText);
+
+            let currentShares = parseInt(currentSharesText, 10);
+            if (!isNaN(currentShares)) {
+                let newSharesNum = currentShares - 1; 
+                // Update the share text node value
+                shareTextNode.nodeValue = ` ${newSharesNum}`;
+            } else {
+                console.error("Current shares value is not a number:", currentSharesText);
+            }
+        } else {
+            console.error("Share text node not found or contains only whitespace");
+        }
+
+        console.log("Share text node:", shareTextNode);
+        flagButton.removeClass("red"); // Add the class to the button
+       
     }
 }
 

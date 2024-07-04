@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
 
     numPostLikes: { type: Number, default: 0 }, // Indicates the # of actor posts liked. Count begins at 1.
     numCommentLikes: { type: Number, default: 0 }, // Indicates the # of actor comments liked. Count begins at 1.
-
+    numPostShared:{ type: Number, default: 0 }, // indicates the # of actor posts has been shared
     lastNotifyVisit: Date, // Absolute Time; Indicates the most recent visit to /notifications. First initialization is at account creation.
     createdAt: Date, // Absolute Time the user was created
     consent: { type: Boolean, default: false }, // Indicates if user has proceeded through the Welcome & community rule pages
@@ -104,19 +104,21 @@ const userSchema = new mongoose.Schema({
         rereadTimes: { type: Number, default: 0 }, // Indicates the # of times the post has been viewed by user.
 
         liked: { type: Boolean, default: false }, // Indicates if the user has liked the post
-        flagged: { type: Boolean, default: false }, // Indicates if the user has flagged the post
+        shared: { type: Boolean, default: false }, // Indicates if the user has flagged the post
         likeTime: [Date], // List of absolute times when the user has liked the post
         unlikeTime: [Date], // List of absolute times when the user has unliked the post
-        flagTime: [Date], // List of absolute times when the user has flagged  the post
+        shareTime: [Date], // List of absolute times when the user has shared  the post
+        unshareTime: [Date], // List of absolute times when the user has unshared  the post
         readTime: [Number], // List of durations the user spent looking at the post in milliseconds (we do not record times less than 1.5 seconds and more than 24 hrs)
 
         comments: [new Schema({
             comment: { type: Schema.ObjectId }, // The unique ID for the comment within the post within the database, the comment the user interacted with
             liked: { type: Boolean, default: false }, // Indicates if the user has liked the comment
-            flagged: { type: Boolean, default: false }, // Indicates if the user has flagged the comment
+            shared: { type: Boolean, default: false }, // Indicates if the user has flagged the comment
             likeTime: [Date], // List of absolute times when the user has liked the post
             unlikeTime: [Date], // List of absolute times when the user has unliked the post
-            flagTime: [Date], // List of absolute times when the user has flagged the post
+            shareTime: [Date], // List of absolute times when the user has flagged the post
+            unshareTime: [Date], // List of absolute times when the user has unflaged the post
             new_comment: { type: Boolean, default: false }, // Indicates if this comment is made by the user
             new_comment_id: Number, // ID for the comment if this comment is made by the user
             body: String, // Body (text) of the comment if this comment is made by the user
