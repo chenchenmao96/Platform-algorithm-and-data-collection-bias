@@ -105,11 +105,11 @@ function flagPost(e) {
         const post = target.closest(".ui.fluid.card.dim");
         const postID = post.attr("postID");
         const postClass = post.attr("postClass");
-        const share = Date.now();
+        const unshare = Date.now();
 
         $.post("/feed", {
             postID: postID,
-            unshare: share,
+            unshare: unshare,
             postClass: postClass,
             _csrf: $('meta[name="csrf-token"]').attr('content')
         });
