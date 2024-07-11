@@ -120,11 +120,12 @@ exports.getScriptFeed = async (req, res, next) => {
                     }
     
                     let sortCriteria = {};
-    
+                    
+                    
                     if (scriptAL === "t") {
                         sortCriteria = { time: -1 }; // Sort by creation time, latest first
                     } else if (scriptAL === "e") {
-                        sortCriteria = { likes: -1 }; // Sort by number of likes, highest first
+                        sortCriteria = { likes: -1 }; // Sort by number of sum, highest first
                     } else {
                         // Default sorting (shuffle)
                         sortCriteria = { _id: 1 }; // This line is a placeholder for sorting by ID if shuffling is not done server-side
@@ -142,13 +143,23 @@ exports.getScriptFeed = async (req, res, next) => {
                         .exec();
     
                     // Shuffle the posts if no specific sorting is applied
-                    if (!["t", "e"].includes(scriptAL)) {
+                    if (["r"].includes(scriptAL)) {
                         //script_feed = _.shuffle(script_feed);
                         const groupId = `${scriptCN}-your-group-id`; // Combine content type with group ID
                     //const order = await getOrCreateFeedOrder(groupId, script_feed);
                     //script_feed.sort((a, b) => order.indexOf(a._id.toString()) - order.indexOf(b._id.toString()));
                         const order = await getOrCreateFeedOrder(groupId, script_feed);
                         script_feed.sort((a, b) => order.indexOf(a._id.toString()) - order.indexOf(b._id.toString()));
+                    }
+                    else if(["e"].includes(scriptAL))
+                    {
+                        script_feed.forEach(script => {
+                            script.totalInteractions = (script.likes || 0) + (script.shares || 0) + (script.comments ? script.comments.length : 0);
+                        });
+                    
+                        // Sort by totalInteractions in descending order
+                        script_feed.sort((a, b) => b.totalInteractions - a.totalInteractions);
+
                     }
     
                     // Ensure script_feed is not empty
