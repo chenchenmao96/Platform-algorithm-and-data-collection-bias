@@ -47,23 +47,16 @@ async function getDataExport() {
     const outputFilepath = `./outputFiles/${outputFilename}.csv`;
     const csvWriter_header = [
         { id: 'Id', title: process.env.IDENTIFIER },
-        { id: 'Username', title: "Username" },
-        { id: 'Condition', title: 'Condition' },
-        { id: 'NumUserPostsCreated', title: 'NumUserPostsCreated' },
+        { id: 'ProificId', title: 'ProificId' },
         { id: 'NumUserCommentsCreated', title: 'NumUserCommentsCreated' },
         { id: 'NumActorPostsLiked', title: 'NumActorPostsLiked' },
-        { id: 'NumActorPostsFlagged', title: 'NumActorPostsFlagged' },
+        { id: 'NumActorPostsShared', title: 'NumActorPostsShared' },
         { id: 'NumActorCommentsLiked', title: 'NumActorCommentsLiked' },
-        { id: 'NumActorCommentsFlagged', title: 'NumActorCommentsFlagged' },
         { id: 'UserPostsCreated', title: 'UserPostsCreated' },
         { id: 'UserCommentsCreated', title: 'UserCommentsCreated' },
         { id: 'ActorPostsLiked', title: 'ActorPostsLiked' },
-        { id: 'ActorPostsFlagged', title: 'ActorPostsFlagged' },
+        { id: 'ActorPostsShared', title: 'ActorPostsShared' },
         { id: 'ActorCommentsLiked', title: 'ActorCommentsLiked' },
-        { id: 'ActorCommentsFlagged', title: 'ActorCommentsFlagged' },
-        { id: 'ActorsBlocked', title: 'ActorsBlocked' },
-        { id: 'ActorsReported', title: 'ActorsReported' },
-        { id: 'ActorsFollowed', title: 'ActorsFollowed' },
         { id: 'TimeOnSite', title: 'TimeOnSite' },
         { id: 'PageLog', title: 'PageLog' }
     ];
@@ -76,8 +69,7 @@ async function getDataExport() {
     for (const user of users) {
         const record = {}; //Record for the user
         record.Id = user.mturkID;
-        record.Username = user.username;
-        record.Condition = user.group;
+        record.ProificId = user.prolificID;
 
         let userPostsCreated = "";
         for (const userPost of user.posts) {
@@ -86,16 +78,14 @@ async function getDataExport() {
         }
         record.NumUserPostsCreated = user.posts.length;
         record.UserPostsCreated = userPostsCreated;
-
+       
         let NumActorPostsLiked = 0,
-            NumActorPostsFlagged = 0,
+            NumActorPostsShared = 0,
             NumUserCommentsCreated = 0,
-            NumActorCommentsLiked = 0,
-            NumActorCommentsFlagged = 0;
+            NumActorCommentsLiked = 0;
         let ActorPostsLiked = [],
-            ActorPostsFlagged = [],
-            ActorCommentsLiked = [],
-            ActorCommentsFlagged = [];
+            ActorPostsShared = [],
+            ActorCommentsLiked = [];
         let UserCommentsCreated = "";
 
         //For each post (feedAction)
@@ -104,9 +94,9 @@ async function getDataExport() {
                 NumActorPostsLiked++;
                 ActorPostsLiked.push(feedAction.post.postID);
             }
-            if (feedAction.flagged) {
-                NumActorPostsFlagged++;
-                ActorPostsFlagged.push(feedAction.post.postID);
+            if (feedAction.shared) {
+                NumActorPostsShared++;
+                ActorPostsShared.push(feedAction.post.postID);
             }
 
             const NewComments = feedAction.comments.filter(comment => comment.new_comment);
@@ -122,23 +112,17 @@ async function getDataExport() {
                 ActorCommentsLiked.push(feedAction.post.comments.find(comment => likedComment.comment.equals(comment._id)).commentID);
             }
 
-            const CommentsFlagged_list = feedAction.comments.filter(comment => !comment.new_comment && comment.flagged);
-            NumActorCommentsFlagged += CommentsFlagged_list.length;
-            for (const flaggedComment of CommentsFlagged_list) {
-                ActorCommentsFlagged.push(feedAction.post.comments.find(comment => flaggedComment.comment.equals(comment._id)).commentID);
-            }
+     
         }
 
         record.NumUserCommentsCreated = NumUserCommentsCreated;
         record.NumActorPostsLiked = NumActorPostsLiked;
-        record.NumActorPostsFlagged = NumActorPostsFlagged;
+        record.NumActorPostsShared = NumActorPostsShared;
         record.NumActorCommentsLiked = NumActorCommentsLiked;
-        record.NumActorCommentsFlagged = NumActorCommentsFlagged;
         record.UserCommentsCreated = UserCommentsCreated;
         record.ActorPostsLiked = ActorPostsLiked;
-        record.ActorPostsFlagged = ActorPostsFlagged;
+        record.ActorPostsShared = ActorPostsShared;
         record.ActorCommentsLiked = ActorCommentsLiked;
-        record.ActorCommentsFlagged = ActorCommentsFlagged;
 
         record.ActorsBlocked = user.blocked;
         record.ActorsFollowed = user.followed;
