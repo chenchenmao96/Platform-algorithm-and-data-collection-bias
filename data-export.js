@@ -6,6 +6,7 @@ const User = require('./models/User.js');
 const Actor = require('./models/Actor.js');
 const mongoose = require('mongoose');
 const fs = require('fs');
+const { title } = require('process');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 
 // Console.log color shortcuts
@@ -58,6 +59,7 @@ async function getDataExport() {
         { id: 'ActorPostsShared', title: 'ActorPostsShared' },
         { id: 'ActorCommentsLiked', title: 'ActorCommentsLiked' },
         { id: 'TimeOnSite', title: 'TimeOnSite' },
+        {id:'TimeSpentEachPost', title:'TimeSpentEachPost(PostID,Time)'},
         { id: 'PageLog', title: 'PageLog' }
     ];
     const csvWriter = createCsvWriter({
@@ -87,9 +89,15 @@ async function getDataExport() {
             ActorPostsShared = [],
             ActorCommentsLiked = [];
         let UserCommentsCreated = "";
-
+        let TimeSpentEachPost = [];
         //For each post (feedAction)
         for (const feedAction of user.feedAction) {
+            let totaltimeEachPost =0; 
+            feedAction.readTime.forEach(readTime => {
+                totaltimeEachPost = totaltimeEachPost +readTime; 
+            });
+        
+            TimeSpentEachPost.push([feedAction.post.postID,totaltimeEachPost]);
             if (feedAction.liked) {
                 NumActorPostsLiked++;
                 ActorPostsLiked.push(feedAction.post.postID);
@@ -123,6 +131,8 @@ async function getDataExport() {
         record.ActorPostsLiked = ActorPostsLiked;
         record.ActorPostsShared = ActorPostsShared;
         record.ActorCommentsLiked = ActorCommentsLiked;
+        //record.TimeSpentEachPost = TimeSpentEachPost;
+        record.TimeSpentEachPost = TimeSpentEachPost.map(pair => `[${pair[0]},${pair[1]}]`).join(';');
 
         record.ActorsBlocked = user.blocked;
         record.ActorsFollowed = user.followed;
