@@ -42,7 +42,7 @@ const userSchema = new mongoose.Schema({
 
     study_days: { // Indicates how many times the user looked at the newsfeed per day
         type: [Number],
-        default: Array(parseInt(process.env.NUM_DAYS) || 30).fill(0)
+        default: Array(parseInt(process.env.NUM_DAYS)).fill(0)
     }, // TODO: Update. It inaccurately +1, whenever creates a new post.
 
     // List of User-made posts
@@ -84,7 +84,7 @@ const userSchema = new mongoose.Schema({
 
     pageTimes: { // Indicates how much time the user spent on the website per day where index 0 corresponds to the first day, index 1 corresopnds to the second day, etc.
         type: [Number],
-        default: Array(parseInt(process.env.NUM_DAYS) || 30).fill(0)
+        default: Array(parseInt(process.env.NUM_DAYS)).fill(0)
     },
 
     postStats: { // Statistics about the user
